@@ -2,99 +2,107 @@
 
 > Arch Linux ARM (alarm) Installation and Configuration on RaspberryPi
 
-## First Installation
+- [alarmpi](#alarmpi)
+  - [Setup](#setup)
+    - [Network](#network)
+      - [WiFi](#wifi)
+      - [SSH](#ssh)
+  - [Install](#install)
 
-- https://archlinuxarm.org/platforms/armv8/broadcom/raspberry-pi-3
+## Setup
 
-## Set up WiFi
+- [First Installation](https://archlinuxarm.org/platforms/armv8/broadcom/raspberry-pi-3)
 
-`wifi-menu`
+### Network
 
-### Start WiFi if not started already
+- Enable hostname `alarmpi.local`
 
-netctl start wlan0-red
+  ```sh
+  pacman --sync avahi
+  systemctl enable avahi-daemon
+  systemctl start avahi-daemon
+  ```
 
-### Connect on boot
+  [Blog](https://www.howtogeek.com/167190/how-and-why-to-assign-the-.local-domain-to-your-raspberry-pi/) about why to enable `.local` domain
 
-netctl enable wlan0-red
+#### WiFi
 
-## Vim
+- Set up WiFi connection
 
-pacman -S vim
+  ```sh
+  wifi-menu
+  ```
 
-## Fix DNS problem
+- Connect to WiFi network, if not already connected
 
-### DNSSEC validation failed: signature-expired
+  ```sh
+  # Placeholder wlan0-red needs to be replaced by your profile name, which is created after executing 'wifi-menu'
+  netctl start wlan0-red
+  ```
 
-```sh
-systemctl restart systemd-resolved.service
-```
+  [Source](https://wiki.archlinux.org/index.php/netctl#Starting_a_profile)
 
-#### Resources
+- Connect to WiFi network automatically on boot
 
-- https://archlinuxarm.org/forum/viewtopic.php?t=13614
+  ```sh
+  netctl enable wlan0-red
+  ```
 
-## Upgrade system packages
+- (Optional) Manually assign IP address
 
-### Fix 404 problem while trying to install any package
+  ```sh
+  # Placeholder wlan0 is interface name. List interfaces using ifconfig
+  ip address add 192.168.0.123/24 broadcast + dev wlan0
+  ```
 
-```sh
-pacman -Syu
-```
+- Fix DNS problem
 
-## Hostname alarmpi.local
+  > DNSSEC validation failed: signature-expired
 
-```sh
-pacman -S avahi
-systemctl enable avahi-daemon
-systemctl start avahi-daemon
-```
+  ```sh
+  systemctl restart systemd-resolved.service
+  ```
 
-### Resources
+  [Source](https://archlinuxarm.org/forum/viewtopic.php?t=13614)
 
-- https://www.howtogeek.com/167190/how-and-why-to-assign-the-.local-domain-to-your-raspberry-pi/
+#### SSH
 
-## SSH keys
+[Source](https://wiki.archlinux.org/index.php/SSH_keys)
 
-https://wiki.archlinux.org/index.php/SSH_keys
+- Generate SSH keys on archlinux server
 
-### arch server
+  ```sh
+  # -C stands for comment
+  ssh-keygen -C "$(whoami)@$(uname -n)-\$(date -I)"
+  ```
 
-```sh
-ssh-keygen -C "$(whoami)@$(uname -n)-\$(date -I)"
-```
+- Add archlinux server to SSH config (`~/.ssh/config`) on another computer in the same network
 
-### ssh_config
+  ```sh
+  Host pi
+    Hostname alarmpi.local
+    User alarm
+  ```
 
-```sh
-Host pi
-  Hostname alarmpi.local
-  User alarm
-```
+- Copy SSH public key to archlinux's authorized keys
 
-### client
+  ```sh
+  ssh-copy-id pi
+  ```
 
-```sh
-ssh-copy-id pi
-```
+## Install
 
-## AirPlay
+- Upgrade system packages
 
-```sh
-pacman -S shairport-sync
-pacman -S alsa-utils
-usermod -a -G audio alarm
-pacman -S alsa-firmware
+  ```sh
+  pacman --sync --refresh --sysupgrade
+  ```
 
-# Volume
-alsamixer -c 0
-```
+- Install `vim`
 
-### Resources
+  ```sh
+  pacman --sync vim
+  ```
 
-- [shairport sync - archlinux wiki](https://wiki.archlinux.org/index.php/Shairport_Sync)
-- [Guide for RaspberryPi Audio](https://www.chaos-reins.com/2017-06-24-raspberry-pi-arch-audio/)
-
-## Coming Soon
-
-https://wiki.archlinux.org/index.php/Pi-hole#Making_devices_use_Pi-hole
+- [Airplay](./airplay.md)
+- [Pi-hole](./pihole.md)
